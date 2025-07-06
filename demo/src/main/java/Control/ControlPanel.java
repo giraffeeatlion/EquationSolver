@@ -2,10 +2,13 @@ package Control;
 
 import java.awt.GridLayout;
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import javax.swing.JTextField;
 
 import org.jfree.chart.JFreeChart;
@@ -14,6 +17,7 @@ import org.jfree.data.xy.XYSeriesCollection;
 
 import Classes.FunctionExpression;
 import Classes.FunctionRow;
+import Classes.Solver;
 
 public class ControlPanel {
     //This is for throttled rendering. To remember states lol.
@@ -29,6 +33,40 @@ public class ControlPanel {
         GUI_init.functionBar.revalidate();
         GUI_init.functionBar.repaint();
     }
+
+
+    public static void solveIntersections() {
+    List<FunctionExpression> exprs = FunctionExpression.expressions;
+    if (exprs.size() < 2) {
+        JOptionPane.showMessageDialog(null, "Need at least 2 functions to find intersection.", "Not enough functions", JOptionPane.WARNING_MESSAGE);
+        return;
+    }
+
+    StringBuilder result = new StringBuilder();
+    double xMin = Plotter.xMinBound;
+    double xMax = Plotter.xMaxBound;
+
+    for (int i = 0; i < exprs.size(); i++) {
+        for (int j = i + 1; j < exprs.size(); j++) {
+            try {
+                double x = Solver.intersectionSolver(exprs.get(i), exprs.get(j), xMin, xMax);
+                double y = exprs.get(i).evaluate(x);
+                result.append("funtion ").append(i).append(" & function ").append(j)
+                      .append(" intersect at:\nx = ").append(String.format("%.4f", x))
+                      .append(", y = ").append(String.format("%.4f", y)).append("\n\n");
+            } catch (Exception ex) {
+                result.append("f").append(i).append(" & f").append(j)
+                      .append(": Error finding intersection: ").append(ex.getMessage()).append("\n\n");
+            }
+        }
+    }
+
+    JTextArea output = new JTextArea(result.toString(), 10, 40);
+    output.setEditable(false);
+    output.setFont(new java.awt.Font("Monospaced", java.awt.Font.PLAIN, 12));
+    JOptionPane.showMessageDialog(null, new JScrollPane(output), "Intersections", JOptionPane.INFORMATION_MESSAGE);
+}
+
 
     public static void plotFunctions()
     {   
