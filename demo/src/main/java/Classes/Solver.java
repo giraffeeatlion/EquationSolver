@@ -20,8 +20,21 @@ public class Solver {
     }
     //gotta code dis for finding intersections between two functions
     
-    public static void intersectionSolver()
-    {
-
+    public static double intersectionSolver(FunctionExpression f, FunctionExpression g, double xMin, double xMax) {
+        // Build h(x) = f(x) - g(x)
+        FunctionExpression h = new FunctionExpression("(" + f.getExpressionString() + ") - (" + g.getExpressionString() + ")", false);
+    
+        
+        String dfStr = FunctionExpression.derivative(f.getExpressionString());
+        String dgStr = FunctionExpression.derivative(g.getExpressionString());
+    
+        if (dfStr == null || dgStr == null) {
+            throw new IllegalArgumentException("Couldn't compute derivatives.");
+        }
+    
+        FunctionExpression dh = new FunctionExpression("(" + dfStr + ") - (" + dgStr + ")", false);
+    
+        return solve(h, dh, xMin, xMax);
     }
+    
 }
