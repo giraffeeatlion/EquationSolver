@@ -12,6 +12,12 @@ import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeriesCollection;
+import java.awt.BasicStroke;
+import org.jfree.chart.plot.ValueMarker;
+import java.awt.Color;
+
+
+
 
 import Control.Plotter;
 
@@ -56,6 +62,7 @@ public class GUI_init {
         JMenuItem toggleSaddleSolver = new JMenuItem("Toggle Saddle Solver");
         JMenuItem toggleToolTips = new JMenuItem("Toggle Point Tooltips");
         JMenuItem setResolution = new JMenuItem("Set Custom Resolution");
+        //JMenuItem intersectionSolver = new JMenuItem("Solve for intersections");
         popupMenu.add(addItem);
         popupMenu.add(plotItem);
         popupMenu.add(resetItem);
@@ -164,6 +171,20 @@ public class GUI_init {
         plot = new XYPlot(null, xAxis, yAxis, null);
         plot.setDomainGridlinesVisible(true);
         plot.setRangeGridlinesVisible(true);
+        //next set of commented lines can be used to bold the boundaries of the graph
+        //lines starting from ValueMarker bold the intersection of axes, also added a few imports
+        //plot.getDomainAxis().setAxisLineStroke(new BasicStroke(2f));
+        //plot.getRangeAxis().setAxisLineStroke(new BasicStroke(2f));
+        //plot.getDomainAxis().setTickMarkStroke(new BasicStroke(2f));
+        //plot.getRangeAxis().setTickMarkStroke(new BasicStroke(2f));
+        ValueMarker verticalLine = new ValueMarker(0.0);
+        verticalLine.setPaint(Color.BLACK);
+        verticalLine.setStroke(new BasicStroke(2.5f));
+        plot.addDomainMarker(verticalLine);
+        ValueMarker horizontalLine = new ValueMarker(0.0);
+        horizontalLine.setPaint(Color.BLACK);
+        horizontalLine.setStroke(new BasicStroke(2.5f));
+        plot.addRangeMarker(horizontalLine);
 
         //Wow
         plot.setDomainPannable(true);
