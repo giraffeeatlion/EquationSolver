@@ -12,8 +12,15 @@ import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeriesCollection;
+import java.awt.BasicStroke;
+import org.jfree.chart.plot.ValueMarker;
+import java.awt.Color;
+import java.awt.Font;
+
+
 
 import Control.Plotter;
+//import tech.tablesaw.plotly.components.Font;
 
 
 
@@ -56,6 +63,7 @@ public class GUI_init {
         JMenuItem toggleSaddleSolver = new JMenuItem("Toggle Saddle Solver");
         JMenuItem toggleToolTips = new JMenuItem("Toggle Point Tooltips");
         JMenuItem setResolution = new JMenuItem("Set Custom Resolution");
+        //JMenuItem intersectionSolver = new JMenuItem("Solve for intersections");
         popupMenu.add(addItem);
         popupMenu.add(plotItem);
         popupMenu.add(resetItem);
@@ -146,6 +154,31 @@ public class GUI_init {
         frame.setSize(1200, 800);
         frame.setLocationRelativeTo(null);
         frame.setVisible(true);
+        
+        JTextArea instructions = new JTextArea(
+    "Instructions:\n" +
+    "- Enter math expressions like sin(x), x^2, etc.\n" +
+    "- Tick derivative checkbox to plot f'(x)\n" +
+    "- Enable solvers to find zeroes/saddles\n" +
+    "- Use zoom/pan (Ctrl + Scroll/Move) for better view\n" +
+    "- Ctrl+Click to reset zoom"
+);
+instructions.setEditable(false);
+instructions.setFont(new Font("Monospaced", Font.PLAIN, 12));
+instructions.setBackground(new Color(245, 245, 245));
+instructions.setBorder(BorderFactory.createTitledBorder("Help"));
+
+
+JScrollPane instructionScroll = new JScrollPane(instructions);
+instructionScroll.setPreferredSize(new java.awt.Dimension(5, 120)); // Set height as needed
+
+leftPanel.add(instructionScroll, BorderLayout.SOUTH);
+leftPanel.revalidate();
+leftPanel.repaint();
+
+
+
+
     }
 
     public void init_chart()
@@ -164,6 +197,20 @@ public class GUI_init {
         plot = new XYPlot(null, xAxis, yAxis, null);
         plot.setDomainGridlinesVisible(true);
         plot.setRangeGridlinesVisible(true);
+        //next set of commented lines can be used to bold the boundaries of the graph
+        //lines starting from ValueMarker bold the intersection of axes, also added a few imports
+        //plot.getDomainAxis().setAxisLineStroke(new BasicStroke(2f));
+        //plot.getRangeAxis().setAxisLineStroke(new BasicStroke(2f));
+        //plot.getDomainAxis().setTickMarkStroke(new BasicStroke(2f));
+        //plot.getRangeAxis().setTickMarkStroke(new BasicStroke(2f));
+        ValueMarker verticalLine = new ValueMarker(0.0);
+        verticalLine.setPaint(Color.BLACK);
+        verticalLine.setStroke(new BasicStroke(2.5f));
+        plot.addDomainMarker(verticalLine);
+        ValueMarker horizontalLine = new ValueMarker(0.0);
+        horizontalLine.setPaint(Color.BLACK);
+        horizontalLine.setStroke(new BasicStroke(2.5f));
+        plot.addRangeMarker(horizontalLine);
 
         //Wow
         plot.setDomainPannable(true);
