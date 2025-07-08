@@ -2,7 +2,10 @@ package Control;
 
 import org.jfree.chart.ChartPanel;
 import javax.swing.*;
+
+import java.awt.BasicStroke;
 import java.awt.BorderLayout;
+import java.awt.Stroke;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
@@ -95,6 +98,7 @@ public class GUI_init {
         setResolution.addActionListener(e->
         {
             MaxResolution = ControlPanel.askResolution();
+            Plotter.plotExpressions();
         });
         setZoomManual.addActionListener(e->{
             ControlPanel.manualZoom();
@@ -174,7 +178,15 @@ public class GUI_init {
 
         //dont know what exactly it does but it should make the curve smoother
         chart.setAntiAlias(true); // Enables chart anti-aliasing
-        chart.setTextAntiAlias(true); 
+        chart.setTextAntiAlias(true);
+
+
+        Stroke thickStroke = new BasicStroke(2.0f);
+        plot.getDomainAxis().setAxisLineStroke(thickStroke);
+        plot.getRangeAxis().setAxisLineStroke(thickStroke);
+        plot.setDomainGridlineStroke(thickStroke);
+        plot.setRangeGridlineStroke(thickStroke);
+        
 
         //rest self explanatory.
         chartPanel = new ChartPanel(chart);

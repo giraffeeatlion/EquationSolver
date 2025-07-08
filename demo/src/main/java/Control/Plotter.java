@@ -33,7 +33,10 @@ public class Plotter {
     public static boolean EnableSaddlePointSolver = false;
 
     //this is the resolution in a way. total number of x values evenly spaced to calculate corresponding y values.
-    public static double total_points = 500;
+    public static double total_points = 2000;
+
+    //
+    public static XYSeriesCollection axisDataset = new XYSeriesCollection();
 
     //This will have all the data that the functions will need
     public static XYSeriesCollection functionDataset = new XYSeriesCollection();
@@ -47,17 +50,19 @@ public class Plotter {
     //this is to set the colours and all of the plotlines and plotpoint to render them lol. discontinuity renderer and point renderer were seperated because point renderes fill be filled and discontinuity renderer will not be fi
     private static XYLineAndShapeRenderer lineRenderer = new XYLineAndShapeRenderer(true,false);
     private static XYLineAndShapeRenderer pointRenderer = new XYLineAndShapeRenderer(false, true); // points only 
-    private static XYLineAndShapeRenderer discontinuityRenderer = new XYLineAndShapeRenderer(false, true); // points only 
+    private static XYLineAndShapeRenderer discontinuityRenderer = new XYLineAndShapeRenderer(false, true); // points only
+    private static XYLineAndShapeRenderer axisRenderer = new XYLineAndShapeRenderer(true, false); 
     
     //These thresholds are for understanding whether the function has discontinuities or some crazy ahh jump. They have to be tuned for better ferformace possible by changing it depending on range.
-    private static final double THRESHOLD = 5;
-    private static final double FUNCTION_THRESHOLD = 40;
+    private static final double THRESHOLD = 15;
+    private static final double FUNCTION_THRESHOLD = 30;
 
     //these colors are for plotting colors lol
     static Color[] colors = {
             Color.RED, Color.BLUE, Color.GREEN, Color.ORANGE, Color.MAGENTA,
             Color.CYAN, Color.PINK, Color.YELLOW, Color.GRAY, Color.DARK_GRAY
         };
+    
 
 
     //rah the actual plotting
@@ -70,6 +75,8 @@ public class Plotter {
         //finding what the plotsize is currently (if zoom or set custom bounds etc etc)
         double xMin = GUI_init.plot.getDomainAxis().getLowerBound();
         double xMax = GUI_init.plot.getDomainAxis().getUpperBound();
+        double yMax = GUI_init.plot.getRangeAxis().getUpperBound();
+        double yMin = GUI_init.plot.getRangeAxis().getLowerBound();
         xMaxBound = xMax;
         xMinBound = xMin;
         
@@ -77,7 +84,27 @@ public class Plotter {
         functionDataset.removeAllSeries();
         pointDataset.removeAllSeries();
         discontinuityDataset.removeAllSeries();
+        axisDataset.removeAllSeries();
 
+        XYSeries xAxisLine = new XYSeries("X-Axis");
+        xAxisLine.add(xMin, 0);
+        xAxisLine.add(xMax, 0);
+
+        XYSeries yAxisLine = new XYSeries("Y-Axis");
+        yAxisLine.add(0, yMin);
+        yAxisLine.add(0, yMax);
+
+
+        axisDataset.addSeries(xAxisLine);
+        axisDataset.addSeries(yAxisLine);
+
+        axisRenderer.setSeriesStroke(0, new BasicStroke(3.0f));
+        axisRenderer.setSeriesStroke(1, new BasicStroke(3.0f));
+        axisRenderer.setSeriesPaint(0, Color.BLACK);
+        axisRenderer.setSeriesPaint(1, Color.BLACK);
+
+        GUI_init.plot.setDataset(0, axisDataset);      // Use slot 3 or next free slot
+        GUI_init.plot.setRenderer(0, axisRenderer);
         //iterating through the functions that have to be plotted
         for(int i = 0; i < FunctionExpression.expressions.size(); i++)
         {   
@@ -130,15 +157,18 @@ public class Plotter {
                     double y = function.evaluate(x);
                     double y_prime = derFunction.evaluate(x);
                     double y_2prime = doubleDerFunction.evaluate(x);
+                    if(y == Double.NEGATIVE_INFINITY || y_prime==Double.NEGATIVE_INFINITY|| y_2prime == Double.NEGATIVE_INFINITY)
+                        break;
                     if (!Double.isNaN(y) && !Double.isInfinite(y))
-                    {
-                        if(Math.abs((y-(prevY_prime*resolution+prevY)))<FUNCTION_THRESHOLD) //if(y is partially close to prevY +dy/dx*(del(x)))
+                    {   
+                        double approxSlope = (y - prevY) / resolution;
+                        if(Math.abs(y -prevY-prevY_prime*resolution) < 0.1) //if(y is partially close to prevY +dy/dx*(del(x)))
                         {
                             functionSeries.add(x,y);
                             if(function.plotDerivative())//ONLY IF WE HAVE TO PLOT DER
                             {   
 
-                                if(Math.abs(y_prime - (y-prevY)/resolution)<THRESHOLD)//if dy/dx is sorta equal to dely/delx
+                                if(Math.abs((y_prime-(function.evaluate(x+resolution/2)-function.evaluate(x-resolution/2))/resolution))<FUNCTION_THRESHOLD)//if dy/dx is sorta equal to dely/delx
                                 {   
                                     derivativeSeries.add(x,y_prime);
                                     if(EnableZeroesSolver && Math.abs(y_prime-prevY_prime)<THRESHOLD && y_prime*prevY_prime<=0)//only if y' changed signs, we search for zeroes. the reason we have the threshold is because functions like tan(x)can change from infinity to -infinity and it would count as a sign change and we'd try solving for a zero then.
@@ -150,9 +180,14 @@ public class Plotter {
                                 else  
                                 {   
                                     //if it is way above the threshold, signs of obvious abnormality therefore we plot discontinuities but tbh this only works well with floor.
-                                    discontinuitySeries.add(prevX,y_prime);
-                                    discontinuitySeries.add(x,y_prime);
-                                    derivativeSeries.add(x,null);
+                                    //discontinuitySeries.add(prevX,prevY_prime);
+                                    //discontinuitySeries.add(x,y_prime);
+                                    if(y_prime*prevY_prime<=0)
+                                        derivativeSeries.add(x,null);
+                                    else
+                                        derivativeSeries.add(x,y_prime);
+                                    //functionSeries.add(x,null);
+                                    //derivativeSeries.add(x,null);
                                 }
                             }
                             if(EnableZeroesSolver && Math.abs(y-prevY)<THRESHOLD && y*prevY<=0)//only solves for zeroes when there is a sign change
@@ -171,13 +206,21 @@ public class Plotter {
                         }
                         else{
                             if(function.plotDerivative())
-                                derivativeSeries.add(x,null);//we add this because the actual function could have discontinuities in general but the derivative might not in that range (eg. log(x) is not defined for negative numbers but its derivative is and we dont wanna plot that BY MISTAKE ALSO but adding this just makes sure there arent crazy lines in between connecting to each other )
-                            functionSeries.add(x,null);//no crazy line connections
+                             {   
+                            derivativeSeries.add(x,y_prime);
+                            discontinuitySeries.add(x,y_prime);
+                            discontinuitySeries.add(prevX,prevY_prime);}//we add this because the actual function could have discontinuities in general but the derivative might not in that range (eg. log(x) is not defined for negative numbers but its derivative is and we dont wanna plot that BY MISTAKE ALSO but adding this just makes sure there arent crazy lines in between connecting to each other )
+                            if(y*prevY<=0)
+                                functionSeries.add(x,null);//no crazy line connections
+                            else
+                                functionSeries.add(x,y);
                         }
                     }
                     else{
                         if(function.plotDerivative())
-                            derivativeSeries.add(x,null);//same as above
+                        {
+                            derivativeSeries.add(x,null);
+                        }
                         functionSeries.add(x,null);
                     }
 
@@ -226,8 +269,8 @@ public class Plotter {
         }
 
         //z_indexing
-        GUI_init.plot.setDataset(0,functionDataset);
-        GUI_init.plot.setRenderer(0,lineRenderer);
+        GUI_init.plot.setDataset(1,functionDataset);
+        GUI_init.plot.setRenderer(1,lineRenderer);
 
         //rendering for point dataset and discontinuity dataset and appropriately rendering them
         if(pointDataset != null)
@@ -236,8 +279,8 @@ public class Plotter {
             pointRenderer.setSeriesPaint(i, colors[(i + functionDataset.getSeriesCount()) % colors.length]);
             pointRenderer.setSeriesShape(i, new java.awt.geom.Ellipse2D.Double(-2, -2, 4, 4)); // small circle
             }
-            GUI_init.plot.setDataset(1,pointDataset);
-            GUI_init.plot.setRenderer(1,pointRenderer);
+            GUI_init.plot.setDataset(2,pointDataset);
+            GUI_init.plot.setRenderer(2,pointRenderer);
         }
         if(discontinuityDataset != null)
         {
@@ -247,8 +290,8 @@ public class Plotter {
             discontinuityRenderer.setSeriesShapesFilled(i, false);
             discontinuityRenderer.setSeriesShapesVisible(i, true);
             }
-            GUI_init.plot.setDataset(2,discontinuityDataset);
-            GUI_init.plot.setRenderer(2,discontinuityRenderer); 
+            GUI_init.plot.setDataset(3,discontinuityDataset);
+            GUI_init.plot.setRenderer(3,discontinuityRenderer); 
         }
 
         //setting tooltips if enabled

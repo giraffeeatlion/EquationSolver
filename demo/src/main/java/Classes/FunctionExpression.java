@@ -75,9 +75,22 @@ public class FunctionExpression {
     //Actual calculation method
      public double evaluate(double x) {
         if (expression == null) {
-            throw new IllegalStateException("Expression not initialized due to invalid input.");
+            //throw new IllegalStateException("Expression not initialized due to invalid input.");
         }
-        return expression.setVariable("x", x).evaluate();
+        
+        try{ return expression.setVariable("x", x).evaluate();
+        }
+        catch(Exception e){
+             JOptionPane.showMessageDialog(
+            null,
+            "Invalid expression: " + e.getMessage() + "\n\n" + expression.toString(),
+            "Expression Error",
+            JOptionPane.ERROR_MESSAGE
+            
+        );
+            return Double.NEGATIVE_INFINITY;
+
+        }
     }
 
     //this is to find the derivative string

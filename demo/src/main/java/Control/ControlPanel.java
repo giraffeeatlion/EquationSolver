@@ -72,7 +72,7 @@ public class ControlPanel {
                 Plotter.EnableZeroesSolver = false;
                 Plotter.EnableSaddlePointSolver = false;
                 Plotter.plotExpressions();
-                System.out.println(xMin + " " + xMax);
+                //System.out.println(xMin + " " + xMax);
                 
             }
     }
@@ -117,10 +117,10 @@ public class ControlPanel {
 
             try {
                 int res = Integer.parseInt(input.trim());
-                if (res > 0) {
+                if (res > 0 && res<=100000) {
                     return res;
                 } else {
-                    JOptionPane.showMessageDialog(null, "Resolution must be a positive integer.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(null, "Resolution must be a positive integer and less than 100000.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
                 }
             } catch (NumberFormatException e) {
                 JOptionPane.showMessageDialog(null, "Please enter a valid integer.", "Invalid Input", JOptionPane.ERROR_MESSAGE);
