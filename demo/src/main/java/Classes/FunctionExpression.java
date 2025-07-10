@@ -23,6 +23,9 @@ public class FunctionExpression {
     public static List<FunctionExpression> expressions = new ArrayList<>();//Main function 
     public static List<FunctionExpression> derivativeExpressions = new ArrayList<>();//derivative function (needed for finding zeroes and saddles)
     public static List<FunctionExpression> doubleDerExpressions = new ArrayList<>();//double derivative (needed for finding saddles)
+    public static List<FunctionExpression> tripleDerExpressions = new ArrayList<>();
+
+    public static FunctionExpression areaFunction;
     //I wanna add tripleDer to be able to plot saddles of derivative function but it might end up becoming too much so i took lite for now.
 
 

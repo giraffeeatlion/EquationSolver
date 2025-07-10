@@ -1,12 +1,15 @@
 package Control;
 
 import java.awt.GridLayout;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JSlider;
 import javax.swing.JTextField;
+import javax.swing.event.ChangeListener;
 
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.plot.XYPlot;
@@ -23,6 +26,73 @@ public class ControlPanel {
 
 
     //adding a function the little thing where we type our function and alladat
+    public static boolean calculateArea = true;
+    public static double areaXMin = 0;
+    public static double areaXMax = 0;
+
+    // Add this method
+    public static void AreaCalculator(FunctionExpression function) {
+        // Determine the allowed x-range for the sliders
+        double plotMin = Plotter.xMinBound;
+        double plotMax = Plotter.xMaxBound;
+        FunctionExpression.areaFunction = function;
+        if(Plotter.areaXMin<plotMin)
+        {
+            Plotter.areaXMin = plotMin;
+        }
+        if(Plotter.areaXMax>plotMax)
+        {
+            Plotter.areaXMax = plotMax;
+        }
+        // Slider granularity (adjust as needed)
+        int sliderSteps = 1000;
+        int minSlider = 0;
+        int maxSlider = sliderSteps;
+
+        // Map current area bounds to slider positions
+        int sliderXMin = (int) ((Plotter.areaXMin - plotMin) / (plotMax - plotMin) * sliderSteps);
+        int sliderXMax = (int) ((Plotter.areaXMax - plotMin) / (plotMax - plotMin) * sliderSteps);
+
+        JSlider xMinSlider = new JSlider(JSlider.HORIZONTAL, minSlider, maxSlider, sliderXMin);
+        JSlider xMaxSlider = new JSlider(JSlider.HORIZONTAL, minSlider, maxSlider, sliderXMax);
+
+        JLabel xMinLabel = new JLabel("From x: " + formatDouble(Plotter.areaXMin));
+        JLabel xMaxLabel = new JLabel("To x: " + formatDouble(Plotter.areaXMax));
+        // Synchronize sliders so min <= max
+        ChangeListener sliderListener = e -> {
+            int minVal = Math.min(xMinSlider.getValue(), xMaxSlider.getValue());
+            int maxVal = Math.max(xMinSlider.getValue(), xMaxSlider.getValue());
+            double xMin = plotMin + (plotMax - plotMin) * minVal / sliderSteps;
+            double xMax = plotMin + (plotMax - plotMin) * maxVal / sliderSteps;
+            xMinLabel.setText("From x: " + formatDouble(xMin));
+            xMaxLabel.setText("To x: " + formatDouble(xMax));
+            Plotter.areaXMin = xMin;
+            Plotter.areaXMax = xMax;
+            Plotter.updateAreaShading(function, xMin, xMax);
+        };
+        xMinSlider.addChangeListener(sliderListener);
+        xMaxSlider.addChangeListener(sliderListener);
+
+        JPanel panel = new JPanel(new GridLayout(4, 1));
+        panel.add(xMinLabel);
+        panel.add(xMinSlider);
+        panel.add(xMaxLabel);
+        panel.add(xMaxSlider);
+
+        int result = JOptionPane.showConfirmDialog(
+            null, panel, "Set Area Bounds", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE
+        );
+
+        if (result != JOptionPane.OK_OPTION) {
+            Plotter.EnableAreaCalculation = true;
+            //Plotter.updateAreaShading(function, Double.NaN, Double.NaN); // Clear area if cancelled
+        }
+    }
+
+    // Helper method to format double values
+    private static String formatDouble(double value) {
+        return new DecimalFormat("0.###").format(value);
+    }
     public static void addFunctionRow()
     {
         GUI_init.functionBar.add(new FunctionRow().createFunctionRow());
@@ -33,10 +103,11 @@ public class ControlPanel {
     public static void plotFunctions()
     {   
         //if we're replotting after adding new functions fire fire fire
-
+        FunctionExpression.areaFunction = null;
         FunctionExpression.expressions = new ArrayList<>();
         FunctionExpression.derivativeExpressions = new ArrayList<>();
         FunctionExpression.doubleDerExpressions = new ArrayList<>();
+        FunctionExpression.tripleDerExpressions = new ArrayList<>();
         String expr;        
         for(FunctionRow rows: FunctionRow.functionRows)
         {
@@ -49,6 +120,9 @@ public class ControlPanel {
             FunctionExpression.derivativeExpressions.add(new FunctionExpression(expr,false));
             expr = FunctionExpression.derivative(expr);
             FunctionExpression.doubleDerExpressions.add(new FunctionExpression(expr,false));
+            expr = FunctionExpression.derivative(expr);
+            FunctionExpression.tripleDerExpressions.add(new FunctionExpression(expr,false));
+
         }
         GUI_init.functionBar.revalidate();
         GUI_init.functionBar.repaint();
@@ -70,9 +144,9 @@ public class ControlPanel {
                 Plotter.total_points = 500;
                 Plotter.EnableToolTips = false;
                 Plotter.EnableZeroesSolver = false;
-                Plotter.EnableSaddlePointSolver = false;
+                Plotter.EnableCriticalPointSolver = false;
                 Plotter.plotExpressions();
-                System.out.println(xMin + " " + xMax);
+                //System.out.println(xMin + " " + xMax);
                 
             }
     }
@@ -84,8 +158,9 @@ public class ControlPanel {
     }
     public static void toggleSaddleSolver()
     {
-        plotSaddles = !plotSaddles;
-        Plotter.EnableSaddlePointSolver = !Plotter.EnableSaddlePointSolver;
+        ControlPanel.plotSaddles = !ControlPanel.plotSaddles;
+        Plotter.EnableCriticalPointSolver = !Plotter.EnableCriticalPointSolver;
+        System.out.println(plotSaddles + " " + Plotter.EnableCriticalPointSolver);
         Plotter.plotExpressions();
     }
     public static void toggleToolTips()

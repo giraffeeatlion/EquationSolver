@@ -53,9 +53,10 @@ public class GUI_init {
         JMenuItem resetItem = new JMenuItem("Reset Zoom");
         JMenuItem setZoomManual = new JMenuItem("Set Bounds Manually");
         JMenuItem toggleZeroesSolver = new JMenuItem("Toggle Zero Solver");
-        JMenuItem toggleSaddleSolver = new JMenuItem("Toggle Saddle Solver");
+        JMenuItem toggleSaddleSolver = new JMenuItem("Toggle Critical Point Solver");
         JMenuItem toggleToolTips = new JMenuItem("Toggle Point Tooltips");
         JMenuItem setResolution = new JMenuItem("Set Custom Resolution");
+        
         popupMenu.add(addItem);
         popupMenu.add(plotItem);
         popupMenu.add(resetItem);
@@ -64,6 +65,7 @@ public class GUI_init {
         popupMenu.add(toggleSaddleSolver);
         popupMenu.add(toggleToolTips);
         popupMenu.add(setResolution);
+
         actionMenuButton.addActionListener(e -> popupMenu.show(actionMenuButton, 0, actionMenuButton.getHeight()));
 
         addItem.addActionListener(e->{
@@ -95,6 +97,8 @@ public class GUI_init {
         setResolution.addActionListener(e->
         {
             MaxResolution = ControlPanel.askResolution();
+            Plotter.total_points = MaxResolution;
+            Plotter.plotExpressions();
         });
         setZoomManual.addActionListener(e->{
             ControlPanel.manualZoom();
@@ -109,7 +113,7 @@ public class GUI_init {
                 Plotter.total_points = MaxResolution;
                 Plotter.EnableToolTips = ControlPanel.toolTips;
                 Plotter.EnableZeroesSolver = ControlPanel.plotZeroes;
-                Plotter.EnableSaddlePointSolver = ControlPanel.plotSaddles;
+                Plotter.EnableCriticalPointSolver = ControlPanel.plotSaddles;
                 Plotter.plotExpressions();
                 highResPending = false;
             }

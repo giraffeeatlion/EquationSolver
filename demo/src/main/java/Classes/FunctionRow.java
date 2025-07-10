@@ -5,7 +5,8 @@ import java.util.*;
 import javax.swing.*;
 
 import Control.ControlPanel;
-import Control.GUI_init; 
+import Control.GUI_init;
+import Control.Plotter; 
 
 //This is the little function field that pops up on the left when we press add function
 //I mean this object contains that Panel but making it an object was better to understand what has to be plotted.
@@ -14,6 +15,7 @@ public class FunctionRow {
     private JTextField derivativeField;
     private JButton addDerivativeButton;
     private JButton deleteFieldButton;
+    private JButton addAUCBtn;
     private boolean hasDerivative = false;
     private JPanel functionPanel;
 
@@ -25,6 +27,7 @@ public class FunctionRow {
     public FunctionRow()
     {
         functionField = new JTextField();
+        addAUCBtn = new JButton("add AUC");
         addDerivativeButton = new JButton("Add f'(x)");
         deleteFieldButton = new JButton("Delete");
     }
@@ -55,10 +58,12 @@ public class FunctionRow {
         functionField.setBounds(50, 30, 300, 30);
         addDerivativeButton.setBounds(50, 70, 100, 30);
         deleteFieldButton.setBounds(250,70,100,30);
+        addAUCBtn.setBounds(150,70,100,30);
         functionPanel.add(label);
         functionPanel.add(functionField);
         functionPanel.add(addDerivativeButton);
         functionPanel.add(deleteFieldButton);
+        functionPanel.add(addAUCBtn);
 
         functionRows.add(this);
         deleteFieldButton.addActionListener(e->{
@@ -67,7 +72,16 @@ public class FunctionRow {
         addDerivativeButton.addActionListener(e->{
             this.addDerivativeField();
         });
+        addAUCBtn.addActionListener(e->this.plotAUC());
         return functionPanel;
+    }
+    private void plotAUC()
+    {
+        int i  = functionRows.indexOf(this);
+        if(i>=0)
+        {
+            ControlPanel.AreaCalculator(FunctionExpression.expressions.get(i));
+        }
     }
     private void addDerivativeField()
     {
@@ -81,14 +95,17 @@ public class FunctionRow {
         derivativeField.setEditable(false);
         functionPanel.remove(deleteFieldButton);
         functionPanel.remove(addDerivativeButton);
+        functionPanel.remove(addAUCBtn);
         
         label.setBounds(10, 70, 30, 30);
         derivativeField.setBounds(50, 70, 300, 30);
         deleteFieldButton.setBounds(250,110,100,30);
+        addAUCBtn.setBounds(50,110,100,30);
 
         functionPanel.add(label);
         functionPanel.add(derivativeField);
         functionPanel.add(deleteFieldButton);
+        functionPanel.add(addAUCBtn);
 
         GUI_init.functionBar.revalidate();
         GUI_init.functionBar.repaint();
@@ -98,6 +115,18 @@ public class FunctionRow {
     private void deleteField()
     {   
         int ind = functionRows.indexOf(this);
+        System.out.println(FunctionExpression.expressions.get(ind).getExpressionString() + " " + FunctionExpression.areaFunction);
+        if(FunctionExpression.areaFunction == FunctionExpression.expressions.get(ind))
+        {   
+            System.out.println(FunctionExpression.expressions.get(ind).getExpressionString());
+            Plotter.areaDataset.removeAllSeries();
+            GUI_init.plot.setDataset(2, null); // Remove area shading
+            GUI_init.plot.setDataset(3, null); // Remove vertical bound markers
+            GUI_init.plot.getRangeAxis().setLabel("Y"); // Reset axis label
+            GUI_init.chart.fireChartChanged();
+            FunctionExpression.areaFunction = null;
+            
+        }
         functionRows.remove(ind);
         GUI_init.functionBar.remove(functionPanel);
 

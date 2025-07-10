@@ -10,10 +10,15 @@ public class Solver {
         for(int i = 0; i < maxSteps;i++)
         {
             double y = f.evaluate(x);
+            //System.out.println(y);
             if(y == 0)
+            {   
+                
                 break;
+            }
             double y_prime = df.evaluate(x);
             x = x - y/y_prime;
+            
             if (Double.isNaN(x) || Double.isInfinite(x)) break;
         }
         return x;
