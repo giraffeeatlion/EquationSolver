@@ -21,37 +21,51 @@ public class VectorSVGExporter {
         
         if (userSelection == JFileChooser.APPROVE_OPTION) {
             File fileToSave = fileChooser.getSelectedFile();
-            // Ensure .svg extension
             if (!fileToSave.getName().toLowerCase().endsWith(".svg")) {
                 fileToSave = new File(fileToSave.getParent(), fileToSave.getName() + ".svg");
             }
             
             try {
-                // Create SVG graphics context
-                SVGGraphics2D g2 = new SVGGraphics2D(800, 600);
+                // Create SVG with desired dimensions
+                int width = 800;
+                int height = 600;
+                SVGGraphics2D g2 = new SVGGraphics2D(width, height);
                 
-                // Set anti-aliasing for better quality
+                // Set high-quality rendering hints
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, 
-                                  RenderingHints.VALUE_ANTIALIAS_ON);
+                                   RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,
-                                  RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+                                   RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
                 
-                // Draw the chart to the SVG graphics context
-                chart.draw(g2, new Rectangle(800, 600));
+                // Draw the chart
+                chart.draw(g2, new Rectangle(width, height));
                 
-                // Write to file
+                // Get SVG content and modify for responsiveness
+                String svgContent = g2.getSVGElement();
+                svgContent = makeSvgResponsive(svgContent, width, height);
+                
+                // Save to file
                 try (FileOutputStream fos = new FileOutputStream(fileToSave);
                      OutputStreamWriter writer = new OutputStreamWriter(fos, "UTF-8")) {
-                    writer.write(g2.getSVGDocument());
+                    writer.write(svgContent);
                     JOptionPane.showMessageDialog(parent, 
-                        "Chart successfully exported as vector SVG!", 
-                        "Export Complete", JOptionPane.INFORMATION_MESSAGE);
+                        "Exported as zoomable vector SVG!", 
+                        "Success", JOptionPane.INFORMATION_MESSAGE);
                 }
             } catch (IOException ex) {
                 JOptionPane.showMessageDialog(parent,
-                    "Error exporting SVG: " + ex.getMessage(),
-                    "Export Error", JOptionPane.ERROR_MESSAGE);
+                    "Export failed: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
+    }
+
+    private static String makeSvgResponsive(String svg, int width, int height) {
+        // Replace fixed dimensions with viewBox
+        return svg.replaceFirst(
+            "<svg width=\"" + width + "\" height=\"" + height + "\"",
+            "<svg viewBox=\"0 0 " + width + " " + height + "\" " +
+            "preserveAspectRatio=\"xMidYMid meet\""
+        );
     }
 }
