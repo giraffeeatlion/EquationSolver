@@ -27,7 +27,7 @@ public class FunctionRow {
     public FunctionRow()
     {
         functionField = new JTextField();
-        addAUCBtn = new JButton("add AUC");
+        addAUCBtn = new JButton("Find AUC");
         addDerivativeButton = new JButton("Add f'(x)");
         deleteFieldButton = new JButton("Delete");
     }
@@ -69,7 +69,7 @@ public class FunctionRow {
         functionPanel.add(addDerivativeButton);
         functionPanel.add(deleteFieldButton);
         functionPanel.add(addAUCBtn);
-
+       
         functionRows.add(this);
         deleteFieldButton.addActionListener(e->{
             this.deleteField();
