@@ -62,18 +62,25 @@ public class GUI_init {
         JMenuItem interSectionSolver = new JMenuItem("Toggle Intersection Solver");
         JMenuItem saveItem = new JMenuItem("Save");
         JMenuItem loadItem = new JMenuItem("Load");
+        JMenuItem exportSVGItem = new JMenuItem("Export as SVG");
+
+
+// Add action listener:
+
         
         popupMenu.add(addItem);
         popupMenu.add(plotItem);
         popupMenu.add(resetItem);
         popupMenu.add(setZoomManual);
+        popupMenu.add(setResolution);  
         popupMenu.add(toggleZeroesSolver);
         popupMenu.add(toggleSaddleSolver);
         popupMenu.add(toggleToolTips);
-        popupMenu.add(setResolution);
         popupMenu.add(interSectionSolver);
+        
         popupMenu.add(saveItem);
         popupMenu.add(loadItem);
+        popupMenu.add(exportSVGItem);
 
         actionMenuButton.addActionListener(e -> popupMenu.show(actionMenuButton, 0, actionMenuButton.getHeight()));
         saveItem.addActionListener(e -> {
@@ -119,6 +126,7 @@ public class GUI_init {
         setZoomManual.addActionListener(e->{
             ControlPanel.manualZoom();
         });
+        exportSVGItem.addActionListener(e -> VectorSVGExporter.exportAsVectorSVG(GUI_init.chart, GUI_init.chartPanel));
         
 
         
