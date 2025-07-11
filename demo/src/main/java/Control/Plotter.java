@@ -51,8 +51,7 @@ public class Plotter {
     };
 
     static Color[] colors = {
-        Color.RED, Color.BLUE, Color.GREEN, Color.ORANGE, Color.MAGENTA,
-        Color.CYAN, Color.PINK, Color.YELLOW, Color.GRAY, Color.DARK_GRAY
+        Color.RED, Color.GREEN, Color.ORANGE, Color.MAGENTA, Color.GRAY, Color.DARK_GRAY
     };
 
 public static void plotExpressions() {
@@ -114,17 +113,21 @@ public static void plotExpressions() {
         for (double x = xMin; x <= xMax; x += resolution) {
             try {
                 double y = function.evaluate(x);
-                if(!(!Double.isNaN(y) && !Double.isInfinite(y)))
-                {
-                    derivativeSeries.add(x,null);
-                }
+                // if(!(!Double.isNaN(y) && !Double.isInfinite(y)))
+                // {   
+                //     functionSeries.add(x,null);
+                //     derivativeSeries.add(x,null);
+                //     continue;
+                    
+                // }
                 double y_prime = derFunction.evaluate(x);
                 double y_2prime = doubleDerFunction.evaluate(x);
-                boolean largeJump = Math.abs(y - prevY) > LARGE_JUMP_THRESHOLD;
+                boolean largeJump = Math.abs(y - prevY) > LARGE_JUMP_THRESHOLD && y*prevY<0;
 
                 functionSeries.add(x, !largeJump ? y : null);
                 if (function.plotDerivative()) {
                     derivativeSeries.add(x, !largeJump ? y_prime : null);
+                    
                 }
 
                 // Zeroes of function
@@ -181,9 +184,7 @@ public static void plotExpressions() {
         if (EnableCriticalPointSolver && function.plotDerivative()) pointDataset.addSeries(derSaddleSeries);
     }
 
-    if (EnableIntersectionSolver) {
-        Plotter.plotIntersections();
-    }
+    
     if(FunctionExpression.areaFunction != null)
         updateAreaShading(FunctionExpression.areaFunction, areaXMin, areaXMax);
 
@@ -194,17 +195,11 @@ public static void plotExpressions() {
     }
 
     for (int i = 0; i < pointDataset.getSeriesCount(); i++) {
-        String key = pointDataset.getSeries(i).getKey().toString();
-        if (key.contains("Saddles")) {
-            pointRenderer.setSeriesPaint(i, Color.MAGENTA);
-            pointRenderer.setSeriesShape(i, new Rectangle2D.Double(-4, -4, 8, 8));
-        } else if (key.contains("Zeroes")) {
-            pointRenderer.setSeriesPaint(i, Color.BLUE);
-            pointRenderer.setSeriesShape(i, new Ellipse2D.Double(-3, -3, 6, 6));
-        } else {
-            pointRenderer.setSeriesPaint(i, colors[(i + functionDataset.getSeriesCount()) % colors.length]);
-            pointRenderer.setSeriesShape(i, new Ellipse2D.Double(-2, -2, 4, 4));
-        }
+        pointRenderer.setSeriesPaint(i, Color.BLUE);
+        pointRenderer.setSeriesShape(i, new Ellipse2D.Double(-2, -2, 4, 4));
+    }
+    if (EnableIntersectionSolver) {
+        Plotter.plotIntersections();
     }
 
     GUI_init.plot.setDataset(1, functionDataset);
@@ -248,11 +243,11 @@ public static void plotExpressions() {
         FunctionExpression plotFunction = intersectionFunction.intersectExpression;
 
         double prevX = xMinBound;
-        double prevY;
+        double prevY = 0;
         try {
             prevY = intersectionFunction.evaluate(prevX);
         } catch (Exception e) {
-            continue;
+            e.printStackTrace();
         }
 
         for (double x = xMinBound + resolution; x <= xMaxBound; x += resolution) {
@@ -267,33 +262,15 @@ public static void plotExpressions() {
 
             boolean isRoot = false;
             // Trigger only once per crossing or entry into near-zero region
-            if (!Double.isNaN(prevY) && !Double.isNaN(y)) {
-                if (prevY * y <= 0) {
-                    isRoot = true;
-                    inNearZero = false;
-                } else if (Math.abs(y) < epsilon && !inNearZero) {
-                    isRoot = true;
-                    inNearZero = true;
-                } else if (Math.abs(y) >= epsilon) {
-                    inNearZero = false;
-                }
-            }
+            if(y * prevY <= 0 || (Math.abs(y) < 0.01 && Math.abs(y - prevY) < 0.01))
+                isRoot = true;
 
             if (isRoot) {
                 double rootX = Solver.solve(intersectionFunction, intersectionDerivative, prevX, x);
                 if (!Double.isNaN(rootX)) {
                     double val = plotFunction.evaluate(rootX);
-                    if (Math.abs(intersectionFunction.evaluate(rootX)) < 1e-6) {
-                        // Duplicate filtering
-                        boolean alreadyExists = false;
-                        for (int j = 0; j < functionIntersectionSeries.getItemCount(); j++) {
-                            if (Math.abs(functionIntersectionSeries.getX(j).doubleValue() - rootX) < tolerance) {
-                                alreadyExists = true;
-                                break;
-                            }
-                        }
-                        if (!alreadyExists) {
-                            System.out.println(intersectionFunction.getExpressionString()+"| derivative: "+intersectionDerivative.getExpressionString()+"\n"+plotFunction.getExpressionString()+": " +intersectionFunction.evaluate(rootX)+" : "+val);
+                    if (Math.abs(intersectionFunction.evaluate(rootX)) < 1e-6) {{
+                           // System.out.println(intersectionFunction.getExpressionString()+"| derivative: "+intersectionDerivative.getExpressionString()+"\n"+plotFunction.getExpressionString()+": " +intersectionFunction.evaluate(rootX)+" : "+val);
                             functionIntersectionSeries.add(rootX, val);
                         }
                     }
@@ -308,85 +285,103 @@ public static void plotExpressions() {
     if (functionIntersectionSeries.getItemCount() > 0) {
         pointDataset.addSeries(functionIntersectionSeries);
         int seriesIndex = pointDataset.getSeriesCount() - 1;
-        pointRenderer.setSeriesPaint(seriesIndex, Color.BLACK);
+        pointRenderer.setSeriesPaint(seriesIndex, Color.DARK_GRAY);
         pointRenderer.setSeriesShape(seriesIndex, new Ellipse2D.Double(-3, -3, 6, 6));
     }
 }
     public static void updateAreaShading(FunctionExpression function, double areaXMin, double areaXMax) {
-        // Find the series corresponding to the function
-        XYSeries targetSeries = null;
-        for (int i = 0; i < functionDataset.getSeriesCount(); i++) {
-            XYSeries series = functionDataset.getSeries(i);
-            String key = series.getKey().toString();
-            if (key.startsWith(function.getExpressionString() + " [")) {
-                targetSeries = series;
-                break;
-            }
-        }
-        if (targetSeries == null) {
-            
-            return;
-        }
-
-        // Build area series within bounds
-        XYSeries areaSeries = new XYSeries("Area Under Curve");
-        double areaSum = 0;
-        double prevX = Double.NaN, prevY = Double.NaN;
-        boolean firstPoint = true;
-
-        for (int i = 0; i < targetSeries.getItemCount(); i++) {
-            Number xNum = targetSeries.getX(i);
-            Number yNum = targetSeries.getY(i);
-            if (xNum == null || yNum == null) continue;
-            double x = xNum.doubleValue();
-            double y = yNum.doubleValue();
-            if (x >= areaXMin && x <= areaXMax) {
-                areaSeries.add(x, y);
-                if (!firstPoint) {
-                    areaSum += 0.5 * (y + prevY) * (x - prevX);
-                }
-                prevX = x;
-                prevY = y;
-                firstPoint = false;
-            }
-        }
-
-        // Only update if at least two points found
+    // Return early if function is null
+    if (function == null) {
         areaDataset.removeAllSeries();
-        if (areaSeries.getItemCount() > 1) {
-            // Close the area polygon
-            areaSeries.add(areaXMax, 0);
-            areaSeries.add(areaXMin, 0);
-            areaSeries.add(areaSeries.getX(0), areaSeries.getY(0));
-
-            areaDataset.addSeries(areaSeries);
-            areaRenderer.setSeriesFillPaint(0, new Color(100, 100, 255, 50));
-
-            DecimalFormat df = new DecimalFormat("0.000");
-            GUI_init.plot.getRangeAxis().setLabel("Y (Area: " + df.format(Math.abs(areaSum)) + ")");
-            GUI_init.plot.setDataset(3, areaDataset);
-            GUI_init.plot.setRenderer(3, areaRenderer);
-            XYSeriesCollection markerDataset = new XYSeriesCollection();
-            for (double xBound : new double[]{areaXMin, areaXMax}) {
-                String s = xBound==areaXMin?"Left Bound":"Right Bound";
-                XYSeries markSeries = new XYSeries(s);
-                markSeries.add(xBound,function.evaluate(xBound));
-                markSeries.add(xBound,0);
-                markerDataset.addSeries(markSeries);
-            }
-            for(int i = 0; i < markerDataset.getSeriesCount(); i++) {
-                boundRenderer.setSeriesStroke(i, new BasicStroke(2.0f));
-                boundRenderer.setSeriesPaint(i, Color.BLUE);
-                boundRenderer.setSeriesShapesVisible(i, false);
-            }
-            GUI_init.plot.setDataset(4, markerDataset);
-            GUI_init.plot.setRenderer(4, boundRenderer);
-        } else {
-            // No valid area, clear dataset and reset label
-            GUI_init.plot.setDataset(3, null);
-            GUI_init.plot.getRangeAxis().setLabel("Y");
-        }
-        
+        GUI_init.plot.setDataset(3, null);
+        GUI_init.plot.setDataset(4, null);
+        GUI_init.plot.getRangeAxis().setLabel("Y");
         GUI_init.chart.fireChartChanged();
+        return;
     }
+
+    // Find the series corresponding to the function
+    XYSeries targetSeries = null;
+    for (int i = 0; i < functionDataset.getSeriesCount(); i++) {
+        XYSeries series = functionDataset.getSeries(i);
+        String key = series.getKey().toString();
+        if (key.startsWith(function.getExpressionString() + " [")) {
+            targetSeries = series;
+            break;
+        }
+    }
+    if (targetSeries == null) {
+        return;
+    }
+Boolean hasNull = false;
+    // Build area series within bounds
+    XYSeries areaSeries = new XYSeries("Area Under Curve");
+    double areaSum = 0;
+    double prevX = Double.NaN, prevY = Double.NaN;
+    boolean firstPoint = true;
+
+    for (int i = 0; i < targetSeries.getItemCount(); i++) {
+        Number xNum = targetSeries.getX(i);
+        Number yNum = targetSeries.getY(i);
+        if (xNum == null || yNum == null){
+            if(xNum.doubleValue() >= areaXMin && xNum.doubleValue() <= areaXMax)
+            {   areaSeries.add(xNum.doubleValue(),null);
+                hasNull = true;
+            }
+            continue;
+        }
+        double x = xNum.doubleValue();
+        double y = yNum.doubleValue();
+        if (x >= areaXMin && x <= areaXMax) {
+            areaSeries.add(x, y);
+            if (!firstPoint) {
+                areaSum += 0.5 * (y + prevY) * (x - prevX);
+            }
+            prevX = x;
+            prevY = y;
+            firstPoint = false;
+        }
+    }
+
+    // Only update if at least two points found
+    areaDataset.removeAllSeries();
+    if (areaSeries.getItemCount() > 1) {
+        // Close the area polygon
+        areaSeries.add(areaXMax, 0);
+        areaSeries.add(areaXMin, 0);
+        areaSeries.add(areaSeries.getX(0), areaSeries.getY(0));
+
+        areaDataset.addSeries(areaSeries);
+        areaRenderer.setSeriesFillPaint(0, new Color(100, 100, 255, 50));
+
+        DecimalFormat df = new DecimalFormat("0.000");
+        if(!hasNull)
+            GUI_init.plot.getRangeAxis().setLabel("Y (Area: " + df.format(Math.abs(areaSum)) + ")");
+        else
+            GUI_init.plot.getRangeAxis().setLabel("Y (Area: Not defined)");
+        GUI_init.plot.setDataset(3, areaDataset);
+        GUI_init.plot.setRenderer(3, areaRenderer);
+        XYSeriesCollection markerDataset = new XYSeriesCollection();
+        for (double xBound : new double[]{areaXMin, areaXMax}) {
+            String s = xBound==areaXMin?"Left Bound":"Right Bound";
+            XYSeries markSeries = new XYSeries(s);
+            markSeries.add(xBound,function.evaluate(xBound));
+            markSeries.add(xBound,0);
+            markerDataset.addSeries(markSeries);
+        }
+        for(int i = 0; i < markerDataset.getSeriesCount(); i++) {
+            boundRenderer.setSeriesStroke(i, new BasicStroke(2.0f));
+            boundRenderer.setSeriesPaint(i, Color.BLUE);
+            boundRenderer.setSeriesShapesVisible(i, false);
+        }
+        GUI_init.plot.setDataset(4, markerDataset);
+        GUI_init.plot.setRenderer(4, boundRenderer);
+    } else {
+        // No valid area, clear dataset and reset label
+        GUI_init.plot.setDataset(3, null);
+        GUI_init.plot.getRangeAxis().setLabel("Y");
+    }
+    
+    GUI_init.chart.fireChartChanged();
+}
 }

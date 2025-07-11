@@ -46,6 +46,21 @@ public class ControlPanel {
             Plotter.areaXMax = plotMax;
         }
         // Slider granularity (adjust as needed)
+        if(Plotter.areaXMin > plotMax)
+        {
+            Plotter.areaXMin = (plotMax+plotMin)/2;
+            Plotter.areaXMax = (plotMax+plotMin)/2;
+        }
+        if(Plotter.areaXMax<plotMin)
+        {
+            Plotter.areaXMin = (plotMax+plotMin)/2;
+            Plotter.areaXMax = (plotMax+plotMin)/2;
+        }
+        if(function == null)
+        {
+            Plotter.updateAreaShading(null, plotMin, plotMax);
+            return;
+        }
         int sliderSteps = 1000;
         int minSlider = 0;
         int maxSlider = sliderSteps;
@@ -142,7 +157,7 @@ public class ControlPanel {
             FunctionExpression fiDoublePrime = FunctionExpression.doubleDerExpressions.get(i);
             boolean fiHasDerivative = fi.plotDerivative();
 
-            for (int j = i + 1; j < n; j++) {
+            for (int j = i+1; j < n; j++) {
                 FunctionExpression fj = FunctionExpression.expressions.get(j);
                 FunctionExpression fjPrime = FunctionExpression.derivativeExpressions.get(j);
                 FunctionExpression fjDoublePrime = FunctionExpression.doubleDerExpressions.get(j);
@@ -189,7 +204,9 @@ public class ControlPanel {
                     // fi'' - fj''
                     FunctionExpression.intersectionDerExpressions.add(new FunctionExpression(
                         fiDoublePrime.getExpressionString() + "-(" + fjDoublePrime.getExpressionString()+")", false,fiDoublePrime));
+                        
                 }
+                System.out.println(i+ " "+j);
             }
 
             // Self expression-derivative intersection
@@ -198,14 +215,34 @@ public class ControlPanel {
                     fi.getExpressionString() + "-(" + fiPrime.getExpressionString()+")", false,fi));
                 FunctionExpression.intersectionDerExpressions.add(new FunctionExpression(
                     fiPrime.getExpressionString() + "-(" + fiDoublePrime.getExpressionString()+")", false,fiPrime));
+                    System.out.println(i+ " "+i);
             }
             
         }
+        /*FunctionExpression fi = null;
+        if(FunctionExpression.expressions.size()-1>=0)
+            fi = FunctionExpression.expressions.get(FunctionExpression.expressions.size()-1);
+        if(fi!=null && fi.plotDerivative())
+        {
+            FunctionExpression.intersectionExpressions.add(new FunctionExpression(
+                    fi.getExpressionString() + "-(" + fiPrime.getExpressionString()+")", false,fi));
+                FunctionExpression.intersectionDerExpressions.add(new FunctionExpression(
+                    fiPrime.getExpressionString() + "-(" + fiDoublePrime.getExpressionString()+")", false,fiPrime));
+        }*/
+        int i = 0;
+        for(FunctionExpression exp: FunctionExpression.intersectionExpressions)
+        {
+            System.out.println(i+": "+exp.getExpressionString());
+            i++;
+        }
+        i = 0;
         for(FunctionExpression exp: FunctionExpression.intersectionDerExpressions)
         {
-            System.out.println(exp.getExpressionString());
+            System.out.println(i+": "+exp.getExpressionString());
+            i++;
         }
-
+        FunctionExpression.areaFunction = null;
+        ControlPanel.AreaCalculator(null);
         // Final GUI and plot update
         GUI_init.functionBar.revalidate();
         GUI_init.functionBar.repaint();
@@ -244,7 +281,7 @@ public class ControlPanel {
     {
         ControlPanel.plotSaddles = !ControlPanel.plotSaddles;
         Plotter.EnableCriticalPointSolver = !Plotter.EnableCriticalPointSolver;
-        System.out.println(plotSaddles + " " + Plotter.EnableCriticalPointSolver);
+        //System.out.println(plotSaddles + " " + Plotter.EnableCriticalPointSolver);
         Plotter.plotExpressions();
     }
     public static void toggleToolTips()

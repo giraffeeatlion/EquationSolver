@@ -124,12 +124,13 @@ public class FunctionRow {
         if(FunctionExpression.areaFunction == FunctionExpression.expressions.get(ind))
         {   
             System.out.println(FunctionExpression.expressions.get(ind).getExpressionString());
-            Plotter.areaDataset.removeAllSeries();
-            GUI_init.plot.setDataset(3, null); // Remove area shading
-            GUI_init.plot.setDataset(4, null); // Remove vertical bound markers
-            GUI_init.plot.getRangeAxis().setLabel("Y"); // Reset axis label
-            GUI_init.chart.fireChartChanged();
+            //Plotter.areaDataset.removeAllSeries();
+            //GUI_init.plot.setDataset(3, null); // Remove area shading
+            //GUI_init.plot.setDataset(4, null); // Remove vertical bound markers
+            GUI_init.plot.getRangeAxis().setLabel("Y"); // Reset axis label           
             FunctionExpression.areaFunction = null;
+            ControlPanel.AreaCalculator(null);
+            GUI_init.chart.fireChartChanged();
             
         }
         functionRows.remove(ind);
