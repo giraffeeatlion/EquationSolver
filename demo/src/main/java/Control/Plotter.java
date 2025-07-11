@@ -4,7 +4,6 @@ import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Paint;
 import java.awt.geom.Ellipse2D;
-import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
 import java.text.DecimalFormat;
 
@@ -17,6 +16,8 @@ import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 
+import com.esotericsoftware.kryo.util.Null;
+
 import Classes.FunctionExpression;
 import Classes.Solver;
 
@@ -27,6 +28,7 @@ public class Plotter {
     public static boolean EnableToolTips = false;
     public static boolean EnableZeroesSolver = false;
     public static boolean EnableCriticalPointSolver = false;
+    public static boolean EnableIntersectionSolver = false;
     public static boolean EnableAreaCalculation = true;
     public static double areaXMin = 0;
     public static double areaXMax = 0;
@@ -36,10 +38,11 @@ public class Plotter {
     public static XYSeriesCollection functionDataset = new XYSeriesCollection();
     private static XYSeriesCollection pointDataset = new XYSeriesCollection();
     public static XYSeriesCollection areaDataset = new XYSeriesCollection();
-
+    public static XYSeriesCollection axisDataset = new XYSeriesCollection();
     private static XYLineAndShapeRenderer lineRenderer = new XYLineAndShapeRenderer(true, false);
     private static XYLineAndShapeRenderer pointRenderer = new XYLineAndShapeRenderer(false, true);
     private static XYLineAndShapeRenderer boundRenderer = new XYLineAndShapeRenderer(true, false);
+    private static XYLineAndShapeRenderer axisRenderer = new XYLineAndShapeRenderer(true, false);
     private static XYAreaRenderer areaRenderer = new XYAreaRenderer() {
         @Override
         public Paint getSeriesPaint(int series) {
@@ -52,119 +55,259 @@ public class Plotter {
         Color.CYAN, Color.PINK, Color.YELLOW, Color.GRAY, Color.DARK_GRAY
     };
 
-    public static void plotExpressions() {
-        if (isPlotting) return;
-        isPlotting = true;
+public static void plotExpressions() {
+    if (isPlotting) return;
+    isPlotting = true;
 
-        double xMin = GUI_init.plot.getDomainAxis().getLowerBound();
-        double xMax = GUI_init.plot.getDomainAxis().getUpperBound();
-        xMaxBound = xMax;
-        xMinBound = xMin;
+    double xMin = GUI_init.plot.getDomainAxis().getLowerBound();
+    double xMax = GUI_init.plot.getDomainAxis().getUpperBound();
+    xMaxBound = xMax;
+    xMinBound = xMin;
 
-        functionDataset.removeAllSeries();
-        pointDataset.removeAllSeries();
 
-        for (int i = 0; i < FunctionExpression.expressions.size(); i++) {
-            FunctionExpression function = FunctionExpression.expressions.get(i);
-            FunctionExpression derFunction = FunctionExpression.derivativeExpressions.get(i);
-            FunctionExpression doubleDerFunction = FunctionExpression.doubleDerExpressions.get(i);
+    axisDataset.removeAllSeries();
+    XYSeries xaxis = new XYSeries("X axis");
+    XYSeries yaxis = new XYSeries("Y axis");
+    xaxis.add(xMin,0);
+    xaxis.add(xMax,0);
+    yaxis.add(0,GUI_init.plot.getRangeAxis().getLowerBound());
+    yaxis.add(0,GUI_init.plot.getRangeAxis().getUpperBound());
+    axisDataset.addSeries(xaxis);
+    axisDataset.addSeries(yaxis);
+    GUI_init.plot.setDataset(0, axisDataset);
+    GUI_init.plot.setRenderer(0, axisRenderer);
 
-            XYSeries functionSeries = new XYSeries(function.getExpressionString() + " [" + i + "]");
-            XYSeries derivativeSeries = function.plotDerivative() ? new XYSeries(derFunction.getExpressionString() + " derivative [" + i + "]") : null;
-            XYSeries zeroSeries = EnableZeroesSolver ? new XYSeries(function.getExpressionString() + ": Zeroes [" + i + "]") : null;
-            XYSeries criticalPointSeries = EnableCriticalPointSolver ? new XYSeries(function.getExpressionString() + ": Critical Points [" + i + "]") : null;
+    for (int i = 0; i < axisDataset.getSeriesCount(); i++) {
+        axisRenderer.setSeriesStroke(i, new BasicStroke(2.0f));
+        axisRenderer.setSeriesPaint(i, Color.BLACK);
+        axisRenderer.setSeriesShapesVisible(i, false);
+    }
 
-            double prevY = function.evaluate(xMin);
-            double prevY_prime = derFunction.evaluate(xMin);
-            double prevX = xMin;
-            double resolution = (xMax - xMin) / total_points;
-            if (resolution == 0) resolution = Double.MIN_VALUE;
+    functionDataset.removeAllSeries();
+    pointDataset.removeAllSeries();
 
-            for (double x = xMin; x <= xMax; x += resolution) {
-                try {
-                    double y = function.evaluate(x);
-                    double y_prime = derFunction.evaluate(x);
-                    boolean largeJump = Math.abs(y - prevY) > LARGE_JUMP_THRESHOLD;
+    for (int i = 0; i < FunctionExpression.expressions.size(); i++) {
+        FunctionExpression function = FunctionExpression.expressions.get(i);
+        FunctionExpression derFunction = FunctionExpression.derivativeExpressions.get(i);
+        FunctionExpression doubleDerFunction = FunctionExpression.doubleDerExpressions.get(i);
 
-                    functionSeries.add(x, !largeJump ? y : null);
-                    if (function.plotDerivative()) {
-                        derivativeSeries.add(x, !largeJump ? y_prime : null);
-                    }
+        XYSeries functionSeries = new XYSeries(function.getExpressionString() + " [" + i + "]");
+        XYSeries derivativeSeries = function.plotDerivative() ? new XYSeries(derFunction.getExpressionString() + " derivative [" + i + "]") : null;
 
-                    if (EnableZeroesSolver && y * prevY <= 0) {
-                        double zeroPoint = Solver.solve(function, derFunction, prevX, x);
-                        if (Math.abs(function.evaluate(zeroPoint)) < 0.001)
-                            zeroSeries.add(zeroPoint, 0);
-                    }
+        XYSeries zeroSeries = EnableZeroesSolver ? new XYSeries(function.getExpressionString() + ": Zeroes [" + i + "]") : null;
+        XYSeries derZeroSeries = (EnableZeroesSolver && function.plotDerivative()) ? new XYSeries(derFunction.getExpressionString() + ": Zeroes [" + i + "]") : null;
 
-                    if (EnableCriticalPointSolver && y_prime * prevY_prime <= 0) {
-                        double criticalPoint = Solver.solve(derFunction, doubleDerFunction, prevX, x);
-                        double critPointValue = function.evaluate(criticalPoint);
-                        if (Math.abs(derFunction.evaluate(criticalPoint)) < 0.1)
-                            criticalPointSeries.add(criticalPoint, critPointValue);
-                    }
+        XYSeries saddleSeries = EnableCriticalPointSolver ? new XYSeries(function.getExpressionString() + ": Critical [" + i + "]") : null;
+        XYSeries derSaddleSeries = (EnableCriticalPointSolver && function.plotDerivative()) ? new XYSeries(derFunction.getExpressionString() + ": Critical [" + i + "]") : null;
 
-                    prevX = x;
-                    prevY = y;
-                    prevY_prime = y_prime;
+        
 
-                } catch (Exception e) {
-                    System.err.println("Evaluation error at x = " + x + ": " + e.getMessage());
+
+
+        double prevY = function.evaluate(xMin);
+        double prevY_prime = derFunction.evaluate(xMin);
+        double prevY_2prime = doubleDerFunction.evaluate(xMin);
+        double prevX = xMin;
+        double resolution = (xMax - xMin) / total_points;
+        if (resolution == 0) resolution = Double.MIN_VALUE;
+
+        for (double x = xMin; x <= xMax; x += resolution) {
+            try {
+                double y = function.evaluate(x);
+                double y_prime = derFunction.evaluate(x);
+                double y_2prime = doubleDerFunction.evaluate(x);
+                boolean largeJump = Math.abs(y - prevY) > LARGE_JUMP_THRESHOLD;
+
+                functionSeries.add(x, !largeJump ? y : null);
+                if (function.plotDerivative()) {
+                    derivativeSeries.add(x, !largeJump ? y_prime : null);
+                }
+
+                // Zeroes of function
+                if (EnableZeroesSolver && !largeJump && (y * prevY <= 0 || (Math.abs(y) < 0.01 && Math.abs(y - prevY) < 0.01))) {
+                    double zeroPoint = Solver.solve(function, derFunction, prevX, x);
+                    if (Math.abs(function.evaluate(zeroPoint)) < 0.001)
+                        zeroSeries.add(zeroPoint, 0);
+                }
+
+                // Zeroes of derivative
+                if (EnableZeroesSolver && function.plotDerivative() && !largeJump && (y_prime * prevY_prime <= 0 || (Math.abs(y_prime) < 0.01 && Math.abs(y_prime - prevY_prime) < 0.01))) {
+                    double derZeroPoint = Solver.solve(derFunction, doubleDerFunction, prevX, x);
+                    if (Math.abs(derFunction.evaluate(derZeroPoint)) < 0.001)
+                        derZeroSeries.add(derZeroPoint, 0);
+                }
+
+                // Saddles of function (where f'(x) = 0 and f''(x) ≈ 0)
+                if (EnableCriticalPointSolver && (y_prime * prevY_prime <= 0 || (Math.abs(y_prime) < 0.01 && Math.abs(y_prime - prevY_prime) < 0.01))) {
+                    double saddleX = Solver.solve(derFunction, doubleDerFunction, prevX, x);
+                    double saddleY = function.evaluate(saddleX);
+                    if (Math.abs(derFunction.evaluate(saddleX)) < 0.1 )
+                        saddleSeries.add(saddleX, saddleY);
+                }
+
+                // Saddles of derivative (where f''(x) = 0 and f'''(x) ≈ 0)
+                if (EnableCriticalPointSolver && function.plotDerivative() && !largeJump && (y_2prime * prevY_2prime <= 0 || (Math.abs(y_2prime) < 0.01 && Math.abs(y_2prime - prevY_2prime) < 0.01))) {
+                    // For derivative's saddle, you would need triple derivative; assuming you have it:
+                    FunctionExpression tripleDerFunction = FunctionExpression.tripleDerExpressions.get(i);
+                    double derSaddleX = Solver.solve(doubleDerFunction, tripleDerFunction, prevX, x);
+                    double derSaddleY = derFunction.evaluate(derSaddleX);
+                    if (Math.abs(doubleDerFunction.evaluate(derSaddleX)) < 0.1)
+                        derSaddleSeries.add(derSaddleX, derSaddleY);
+                }
+
+                prevX = x;
+                prevY = y;
+                prevY_prime = y_prime;
+                prevY_2prime = y_2prime;
+
+            } catch (Exception e) {
+                System.err.println("Evaluation error at x = " + x + ": " + e.getMessage());
+            }
+        }
+
+        functionDataset.addSeries(functionSeries);
+        if (function.plotDerivative()) {
+            functionDataset.addSeries(derivativeSeries);
+        }
+
+        if (EnableZeroesSolver) pointDataset.addSeries(zeroSeries);
+        if (EnableZeroesSolver && function.plotDerivative()) pointDataset.addSeries(derZeroSeries);
+
+        if (EnableCriticalPointSolver) pointDataset.addSeries(saddleSeries);
+        if (EnableCriticalPointSolver && function.plotDerivative()) pointDataset.addSeries(derSaddleSeries);
+    }
+
+    if (EnableIntersectionSolver) {
+        Plotter.plotIntersections();
+    }
+    if(FunctionExpression.areaFunction != null)
+        updateAreaShading(FunctionExpression.areaFunction, areaXMin, areaXMax);
+
+    for (int i = 0; i < functionDataset.getSeriesCount(); i++) {
+        lineRenderer.setSeriesStroke(i, new BasicStroke(2.0f));
+        lineRenderer.setSeriesPaint(i, colors[i % colors.length]);
+        lineRenderer.setSeriesShapesVisible(i, false);
+    }
+
+    for (int i = 0; i < pointDataset.getSeriesCount(); i++) {
+        String key = pointDataset.getSeries(i).getKey().toString();
+        if (key.contains("Saddles")) {
+            pointRenderer.setSeriesPaint(i, Color.MAGENTA);
+            pointRenderer.setSeriesShape(i, new Rectangle2D.Double(-4, -4, 8, 8));
+        } else if (key.contains("Zeroes")) {
+            pointRenderer.setSeriesPaint(i, Color.BLUE);
+            pointRenderer.setSeriesShape(i, new Ellipse2D.Double(-3, -3, 6, 6));
+        } else {
+            pointRenderer.setSeriesPaint(i, colors[(i + functionDataset.getSeriesCount()) % colors.length]);
+            pointRenderer.setSeriesShape(i, new Ellipse2D.Double(-2, -2, 4, 4));
+        }
+    }
+
+    GUI_init.plot.setDataset(1, functionDataset);
+    GUI_init.plot.setRenderer(1, lineRenderer);
+    GUI_init.plot.setDataset(2, pointDataset);
+    GUI_init.plot.setRenderer(2, pointRenderer);
+
+    if (EnableToolTips) {
+        XYToolTipGenerator toolTipGenerator = new StandardXYToolTipGenerator(
+            StandardXYToolTipGenerator.DEFAULT_TOOL_TIP_FORMAT,
+            new DecimalFormat("0.000"),
+            new DecimalFormat("0.000")
+        );
+        lineRenderer.setDefaultToolTipGenerator(toolTipGenerator);
+        pointRenderer.setDefaultToolTipGenerator(toolTipGenerator);
+    } else {
+        lineRenderer.setDefaultToolTipGenerator(null);
+        pointRenderer.setDefaultToolTipGenerator(null);
+    }
+
+    GUI_init.plot.setDatasetRenderingOrder(DatasetRenderingOrder.FORWARD);
+    GUI_init.chart.fireChartChanged();
+    isPlotting = false;
+}
+
+    public static void plotIntersections() {
+    // Optionally clear previous intersection series from pointDataset if needed
+
+    XYSeries functionIntersectionSeries = new XYSeries("Function Intersections");
+
+    double resolution = (xMaxBound - xMinBound) / total_points;
+    if (resolution == 0) resolution = Double.MIN_VALUE;
+
+    double tolerance = resolution / 4.0; // Stricter for duplicate filtering
+    double epsilon = 1e-6; // For near-zero detection
+    boolean inNearZero = false; // Debounce flag
+
+    for (int i = 0; i < FunctionExpression.intersectionExpressions.size(); i++) {
+        FunctionExpression intersectionFunction = FunctionExpression.intersectionExpressions.get(i);
+        FunctionExpression intersectionDerivative = FunctionExpression.intersectionDerExpressions.get(i);
+        FunctionExpression plotFunction = intersectionFunction.intersectExpression;
+
+        double prevX = xMinBound;
+        double prevY;
+        try {
+            prevY = intersectionFunction.evaluate(prevX);
+        } catch (Exception e) {
+            continue;
+        }
+
+        for (double x = xMinBound + resolution; x <= xMaxBound; x += resolution) {
+            double y;
+            try {
+                y = intersectionFunction.evaluate(x);
+            } catch (Exception e) {
+                prevX = x;
+                prevY = Double.NaN;
+                continue;
+            }
+
+            boolean isRoot = false;
+            // Trigger only once per crossing or entry into near-zero region
+            if (!Double.isNaN(prevY) && !Double.isNaN(y)) {
+                if (prevY * y <= 0) {
+                    isRoot = true;
+                    inNearZero = false;
+                } else if (Math.abs(y) < epsilon && !inNearZero) {
+                    isRoot = true;
+                    inNearZero = true;
+                } else if (Math.abs(y) >= epsilon) {
+                    inNearZero = false;
                 }
             }
 
-            functionDataset.addSeries(functionSeries);
-            if (function.plotDerivative()) {
-                functionDataset.addSeries(derivativeSeries);
+            if (isRoot) {
+                double rootX = Solver.solve(intersectionFunction, intersectionDerivative, prevX, x);
+                if (!Double.isNaN(rootX)) {
+                    double val = plotFunction.evaluate(rootX);
+                    if (Math.abs(intersectionFunction.evaluate(rootX)) < 1e-6) {
+                        // Duplicate filtering
+                        boolean alreadyExists = false;
+                        for (int j = 0; j < functionIntersectionSeries.getItemCount(); j++) {
+                            if (Math.abs(functionIntersectionSeries.getX(j).doubleValue() - rootX) < tolerance) {
+                                alreadyExists = true;
+                                break;
+                            }
+                        }
+                        if (!alreadyExists) {
+                            System.out.println(intersectionFunction.getExpressionString()+"| derivative: "+intersectionDerivative.getExpressionString()+"\n"+plotFunction.getExpressionString()+": " +intersectionFunction.evaluate(rootX)+" : "+val);
+                            functionIntersectionSeries.add(rootX, val);
+                        }
+                    }
+                }
             }
-
-            if (EnableZeroesSolver) pointDataset.addSeries(zeroSeries);
-            if (EnableCriticalPointSolver) pointDataset.addSeries(criticalPointSeries);
+            prevX = x;
+            prevY = y;
         }
-
-        for (int i = 0; i < functionDataset.getSeriesCount(); i++) {
-            lineRenderer.setSeriesStroke(i, new BasicStroke(2.0f));
-            lineRenderer.setSeriesPaint(i, colors[i % colors.length]);
-            lineRenderer.setSeriesShapesVisible(i, false);
-        }
-
-        for (int i = 0; i < pointDataset.getSeriesCount(); i++) {
-            String key = pointDataset.getSeries(i).getKey().toString();
-            if (key.contains("Critical Points")) {
-                pointRenderer.setSeriesPaint(i, Color.DARK_GRAY);
-                pointRenderer.setSeriesShape(i, new Rectangle2D.Double(-4, -4, 8, 8));
-            } else {
-                pointRenderer.setSeriesPaint(i, colors[(i + functionDataset.getSeriesCount()) % colors.length]);
-                pointRenderer.setSeriesShape(i, new Ellipse2D.Double(-2, -2, 4, 4));
-            }
-        }
-
-        GUI_init.plot.setDataset(0, functionDataset);
-        GUI_init.plot.setRenderer(0, lineRenderer);
-        GUI_init.plot.setDataset(1, pointDataset);
-        GUI_init.plot.setRenderer(1, pointRenderer);
-
-        if (EnableToolTips) {
-            XYToolTipGenerator toolTipGenerator = new StandardXYToolTipGenerator(
-                StandardXYToolTipGenerator.DEFAULT_TOOL_TIP_FORMAT,
-                new DecimalFormat("0.000"),
-                new DecimalFormat("0.000")
-            );
-            lineRenderer.setDefaultToolTipGenerator(toolTipGenerator);
-            pointRenderer.setDefaultToolTipGenerator(toolTipGenerator);
-        } else {
-            lineRenderer.setDefaultToolTipGenerator(null);
-            pointRenderer.setDefaultToolTipGenerator(null);
-        }
-
-        GUI_init.plot.setDatasetRenderingOrder(DatasetRenderingOrder.FORWARD);
-        GUI_init.chart.fireChartChanged();
-        isPlotting = false;
     }
 
-
-
-
+    // Add the intersection series to the point dataset with appropriate styling
+    if (functionIntersectionSeries.getItemCount() > 0) {
+        pointDataset.addSeries(functionIntersectionSeries);
+        int seriesIndex = pointDataset.getSeriesCount() - 1;
+        pointRenderer.setSeriesPaint(seriesIndex, Color.BLACK);
+        pointRenderer.setSeriesShape(seriesIndex, new Ellipse2D.Double(-3, -3, 6, 6));
+    }
+}
     public static void updateAreaShading(FunctionExpression function, double areaXMin, double areaXMax) {
         // Find the series corresponding to the function
         XYSeries targetSeries = null;
@@ -217,8 +360,8 @@ public class Plotter {
 
             DecimalFormat df = new DecimalFormat("0.000");
             GUI_init.plot.getRangeAxis().setLabel("Y (Area: " + df.format(Math.abs(areaSum)) + ")");
-            GUI_init.plot.setDataset(2, areaDataset);
-            GUI_init.plot.setRenderer(2, areaRenderer);
+            GUI_init.plot.setDataset(3, areaDataset);
+            GUI_init.plot.setRenderer(3, areaRenderer);
             XYSeriesCollection markerDataset = new XYSeriesCollection();
             for (double xBound : new double[]{areaXMin, areaXMax}) {
                 String s = xBound==areaXMin?"Left Bound":"Right Bound";
@@ -232,11 +375,11 @@ public class Plotter {
                 boundRenderer.setSeriesPaint(i, Color.BLUE);
                 boundRenderer.setSeriesShapesVisible(i, false);
             }
-            GUI_init.plot.setDataset(3, markerDataset);
-            GUI_init.plot.setRenderer(3, boundRenderer);
+            GUI_init.plot.setDataset(4, markerDataset);
+            GUI_init.plot.setRenderer(4, boundRenderer);
         } else {
             // No valid area, clear dataset and reset label
-            GUI_init.plot.setDataset(2, null);
+            GUI_init.plot.setDataset(3, null);
             GUI_init.plot.getRangeAxis().setLabel("Y");
         }
         

@@ -6,6 +6,8 @@ import java.awt.BorderLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.ArrayList;
+import java.util.ResourceBundle.Control;
+
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.NumberAxis;
@@ -56,6 +58,7 @@ public class GUI_init {
         JMenuItem toggleSaddleSolver = new JMenuItem("Toggle Critical Point Solver");
         JMenuItem toggleToolTips = new JMenuItem("Toggle Point Tooltips");
         JMenuItem setResolution = new JMenuItem("Set Custom Resolution");
+        JMenuItem interSectionSolver = new JMenuItem("Toggle Intersection Solver");
         
         popupMenu.add(addItem);
         popupMenu.add(plotItem);
@@ -65,12 +68,14 @@ public class GUI_init {
         popupMenu.add(toggleSaddleSolver);
         popupMenu.add(toggleToolTips);
         popupMenu.add(setResolution);
+        popupMenu.add(interSectionSolver);
 
         actionMenuButton.addActionListener(e -> popupMenu.show(actionMenuButton, 0, actionMenuButton.getHeight()));
 
         addItem.addActionListener(e->{
             ControlPanel.addFunctionRow();
         });
+        interSectionSolver.addActionListener(e->ControlPanel.toggleIntersectionSolver());
         controlBar.add(addFunctionButton);
         controlBar.add(actionMenuButton);
         controlBar.add(plotGraphBtn);
@@ -114,6 +119,7 @@ public class GUI_init {
                 Plotter.EnableToolTips = ControlPanel.toolTips;
                 Plotter.EnableZeroesSolver = ControlPanel.plotZeroes;
                 Plotter.EnableCriticalPointSolver = ControlPanel.plotSaddles;
+                Plotter.EnableIntersectionSolver = ControlPanel.plotIntersections;
                 Plotter.plotExpressions();
                 highResPending = false;
             }

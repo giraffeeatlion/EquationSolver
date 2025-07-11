@@ -23,6 +23,7 @@ public class ControlPanel {
     public static boolean plotZeroes = false;
     public static boolean plotSaddles = false;
     public static boolean toolTips = false;
+    public static boolean plotIntersections = false;
 
 
     //adding a function the little thing where we type our function and alladat
@@ -102,28 +103,110 @@ public class ControlPanel {
 
     public static void plotFunctions()
     {   
-        //if we're replotting after adding new functions fire fire fire
-        FunctionExpression.areaFunction = null;
-        FunctionExpression.expressions = new ArrayList<>();
-        FunctionExpression.derivativeExpressions = new ArrayList<>();
-        FunctionExpression.doubleDerExpressions = new ArrayList<>();
-        FunctionExpression.tripleDerExpressions = new ArrayList<>();
-        String expr;        
-        for(FunctionRow rows: FunctionRow.functionRows)
-        {
-            expr = rows.getFunctionText();
-            expr = FunctionExpression.autoFixParentheses(expr);
-            rows.setFunctionText(expr);
-            FunctionExpression.expressions.add(new FunctionExpression(expr,rows.hasDerivative()));
-            expr = FunctionExpression.derivative(expr);
-            rows.setDerivativeText(expr);
-            FunctionExpression.derivativeExpressions.add(new FunctionExpression(expr,false));
-            expr = FunctionExpression.derivative(expr);
-            FunctionExpression.doubleDerExpressions.add(new FunctionExpression(expr,false));
-            expr = FunctionExpression.derivative(expr);
-            FunctionExpression.tripleDerExpressions.add(new FunctionExpression(expr,false));
+        FunctionExpression.expressions.clear();
+        FunctionExpression.derivativeExpressions.clear();
+        FunctionExpression.doubleDerExpressions.clear();
+        FunctionExpression.tripleDerExpressions.clear();
+        FunctionExpression.intersectionExpressions.clear();
+        FunctionExpression.intersectionDerExpressions.clear();
 
+        // STEP 1: First add all expressions and their derivatives
+        for(FunctionRow row : FunctionRow.functionRows) {
+            String expr = row.getFunctionText();
+            expr = FunctionExpression.autoFixParentheses(expr);
+            row.setFunctionText(expr);
+
+            FunctionExpression exprObj = new FunctionExpression(expr, row.hasDerivative());
+            FunctionExpression.expressions.add(exprObj);
+
+            // First Derivative
+            String firstDer = FunctionExpression.derivative(expr);
+            row.setDerivativeText(firstDer);
+            FunctionExpression.derivativeExpressions.add(new FunctionExpression(firstDer, false));
+
+            // Second Derivative
+            String secondDer = FunctionExpression.derivative(firstDer);
+            FunctionExpression.doubleDerExpressions.add(new FunctionExpression(secondDer, false));
+
+            // Third Derivative
+            String thirdDer = FunctionExpression.derivative(secondDer);
+            FunctionExpression.tripleDerExpressions.add(new FunctionExpression(thirdDer, false));
         }
+
+        // STEP 2: Now perform intersection logic
+        int n = FunctionExpression.expressions.size();
+
+        for (int i = 0; i < n; i++) {
+            FunctionExpression fi = FunctionExpression.expressions.get(i);
+            FunctionExpression fiPrime = FunctionExpression.derivativeExpressions.get(i);
+            FunctionExpression fiDoublePrime = FunctionExpression.doubleDerExpressions.get(i);
+            boolean fiHasDerivative = fi.plotDerivative();
+
+            for (int j = i + 1; j < n; j++) {
+                FunctionExpression fj = FunctionExpression.expressions.get(j);
+                FunctionExpression fjPrime = FunctionExpression.derivativeExpressions.get(j);
+                FunctionExpression fjDoublePrime = FunctionExpression.doubleDerExpressions.get(j);
+                boolean fjHasDerivative = fj.plotDerivative();
+
+                // f_i - f_j
+                FunctionExpression.intersectionExpressions.add(new FunctionExpression(
+                    fi.getExpressionString() + "-(" + fj.getExpressionString()+")", false,fi));
+
+
+                // f'_i - f'_j
+                FunctionExpression.intersectionDerExpressions.add(new FunctionExpression(
+                    fiPrime.getExpressionString() + "-(" + fjPrime.getExpressionString()+")", false,fiPrime));
+
+
+                if (fjHasDerivative) {
+                    FunctionExpression.intersectionExpressions.add(new FunctionExpression(
+                        fi.getExpressionString() + "-(" + fjPrime.getExpressionString()+")", false,fi));
+                }
+
+                // Function - Derivative (only if fi has derivative)
+                if (fiHasDerivative) {
+                    FunctionExpression.intersectionExpressions.add(new FunctionExpression(
+                        fj.getExpressionString() + "-(" + fiPrime.getExpressionString()+")", false,fj));
+                }
+
+                // Derivative - Second Derivative (only if fj has derivative)
+                if (fjHasDerivative) {
+                    FunctionExpression.intersectionDerExpressions.add(new FunctionExpression(
+                        fiPrime.getExpressionString() + "-(" + fjDoublePrime.getExpressionString()+")", false,fiPrime));
+                }
+
+                // Derivative - Second Derivative (only if fi has derivative)
+                if (fiHasDerivative) {
+                    FunctionExpression.intersectionDerExpressions.add(new FunctionExpression(
+                        fjPrime.getExpressionString() + "-(" + fiDoublePrime.getExpressionString()+")", false,fjPrime));
+                }
+                if (fiHasDerivative && fjHasDerivative) {
+    // fi' - fj'
+                    FunctionExpression.intersectionExpressions.add(new FunctionExpression(
+                        fiPrime.getExpressionString() + "-(" + fjPrime.getExpressionString()+")", false,fiPrime));
+
+
+                    // fi'' - fj''
+                    FunctionExpression.intersectionDerExpressions.add(new FunctionExpression(
+                        fiDoublePrime.getExpressionString() + "-(" + fjDoublePrime.getExpressionString()+")", false,fiDoublePrime));
+                }
+            }
+
+            // Self expression-derivative intersection
+            if (fiHasDerivative) {
+                FunctionExpression.intersectionExpressions.add(new FunctionExpression(
+                    fi.getExpressionString() + "-(" + fiPrime.getExpressionString()+")", false,fi));
+                FunctionExpression.intersectionDerExpressions.add(new FunctionExpression(
+                    fiPrime.getExpressionString() + "-(" + fiDoublePrime.getExpressionString()+")", false,fiPrime));
+            }
+            
+        }
+        for(FunctionExpression exp: FunctionExpression.intersectionDerExpressions)
+        {
+            System.out.println(exp.getExpressionString());
+        }
+
+        // Final GUI and plot update
         GUI_init.functionBar.revalidate();
         GUI_init.functionBar.repaint();
         Plotter.plotExpressions();
@@ -145,6 +228,7 @@ public class ControlPanel {
                 Plotter.EnableToolTips = false;
                 Plotter.EnableZeroesSolver = false;
                 Plotter.EnableCriticalPointSolver = false;
+                Plotter.EnableIntersectionSolver = false;
                 Plotter.plotExpressions();
                 //System.out.println(xMin + " " + xMax);
                 
@@ -167,6 +251,12 @@ public class ControlPanel {
     {
         toolTips = !toolTips;
         Plotter.EnableToolTips = !Plotter.EnableToolTips;
+        Plotter.plotExpressions();
+    }
+    public static void toggleIntersectionSolver()
+    {
+        plotIntersections = !plotIntersections;
+        Plotter.EnableIntersectionSolver = !Plotter.EnableIntersectionSolver;
         Plotter.plotExpressions();
     }
     public static void resetZoom()

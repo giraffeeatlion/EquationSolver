@@ -18,12 +18,15 @@ public class FunctionExpression {
     private Expression expression; //This is the core exp4j object that we'll be using
     private String expressionString; //Storing the expressionString
     private Boolean plotDerivative = false; //If we wanna plot dis derivative
+    public FunctionExpression intersectExpression;
 
     //These three are re-initialized only when we click plotAll
     public static List<FunctionExpression> expressions = new ArrayList<>();//Main function 
     public static List<FunctionExpression> derivativeExpressions = new ArrayList<>();//derivative function (needed for finding zeroes and saddles)
     public static List<FunctionExpression> doubleDerExpressions = new ArrayList<>();//double derivative (needed for finding saddles)
     public static List<FunctionExpression> tripleDerExpressions = new ArrayList<>();
+    public static List<FunctionExpression> intersectionExpressions = new ArrayList<>();
+    public static List<FunctionExpression> intersectionDerExpressions = new ArrayList<>();
 
     public static FunctionExpression areaFunction;
     //I wanna add tripleDer to be able to plot saddles of derivative function but it might end up becoming too much so i took lite for now.
@@ -34,30 +37,57 @@ public class FunctionExpression {
 
 
     public FunctionExpression(String exprStr, boolean plot) {
-    this.plotDerivative = plot;
+        this.plotDerivative = plot;
 
-    // Auto-fix unbalanced parentheses by appending missing ')'
-    exprStr = autoFixParentheses(exprStr);
-    this.expressionString = exprStr;
+        // Auto-fix unbalanced parentheses by appending missing ')'
+        exprStr = autoFixParentheses(exprStr);
+        this.expressionString = exprStr;
 
 
-    //building function lol
-    try {
-        ExpressionBuilder builder = new ExpressionBuilder(exprStr).variable("x");
-        for (Function f : CustomFunctions.customTrigFunctions) {
-            builder.function(f);
+        //building function lol
+        try {
+            ExpressionBuilder builder = new ExpressionBuilder(exprStr).variable("x");
+            for (Function f : CustomFunctions.customTrigFunctions) {
+                builder.function(f);
+            }
+            this.expression = builder.build();
+        } catch (Exception e) {
+            //this kinda wont because when i tried for some inputs like sin (not sin(x)) it just threw exceptions and idk how to handle it yet. didnt put too much thought into it
+            JOptionPane.showMessageDialog(
+                null,
+                "Invalid expression: " + e.getMessage() + "\n\n" + exprStr,
+                "Expression Error",
+                JOptionPane.ERROR_MESSAGE
+            );
         }
-        this.expression = builder.build();
-    } catch (Exception e) {
-        //this kinda wont because when i tried for some inputs like sin (not sin(x)) it just threw exceptions and idk how to handle it yet. didnt put too much thought into it
-        JOptionPane.showMessageDialog(
-            null,
-            "Invalid expression: " + e.getMessage() + "\n\n" + exprStr,
-            "Expression Error",
-            JOptionPane.ERROR_MESSAGE
-        );
     }
-}
+       
+    public FunctionExpression(String exprStr, boolean plot,FunctionExpression Expression) {
+        this.plotDerivative = plot;
+        this.intersectExpression = Expression;
+        // Auto-fix unbalanced parentheses by appending missing ')'
+        exprStr = autoFixParentheses(exprStr);
+        this.expressionString = exprStr;
+
+
+        //building function lol
+        try {
+            ExpressionBuilder builder = new ExpressionBuilder(exprStr).variable("x");
+            for (Function f : CustomFunctions.customTrigFunctions) {
+                builder.function(f);
+            }
+            this.expression = builder.build();
+        } catch (Exception e) {
+            //this kinda wont because when i tried for some inputs like sin (not sin(x)) it just threw exceptions and idk how to handle it yet. didnt put too much thought into it
+            JOptionPane.showMessageDialog(
+                null,
+                "Invalid expression: " + e.getMessage() + "\n\n" + exprStr,
+                "Expression Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+        }
+    }
+
 
     public String getExpressionString() {
         return expressionString;
@@ -71,7 +101,7 @@ public class FunctionExpression {
         return this.plotDerivative;
     }
     public boolean plotDerivative()
-    {
+    { 
         return this.plotDerivative;
     }
 

@@ -120,8 +120,8 @@ public class FunctionRow {
         {   
             System.out.println(FunctionExpression.expressions.get(ind).getExpressionString());
             Plotter.areaDataset.removeAllSeries();
-            GUI_init.plot.setDataset(2, null); // Remove area shading
-            GUI_init.plot.setDataset(3, null); // Remove vertical bound markers
+            GUI_init.plot.setDataset(3, null); // Remove area shading
+            GUI_init.plot.setDataset(4, null); // Remove vertical bound markers
             GUI_init.plot.getRangeAxis().setLabel("Y"); // Reset axis label
             GUI_init.chart.fireChartChanged();
             FunctionExpression.areaFunction = null;
