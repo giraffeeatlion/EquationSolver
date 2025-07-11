@@ -15,6 +15,7 @@ import org.jfree.chart.axis.ValueAxis;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.data.xy.XYSeriesCollection;
 
+import Classes.FunctionRow;
 import Control.Plotter;
 
 
@@ -59,6 +60,8 @@ public class GUI_init {
         JMenuItem toggleToolTips = new JMenuItem("Toggle Point Tooltips");
         JMenuItem setResolution = new JMenuItem("Set Custom Resolution");
         JMenuItem interSectionSolver = new JMenuItem("Toggle Intersection Solver");
+        JMenuItem saveItem = new JMenuItem("Save");
+        JMenuItem loadItem = new JMenuItem("Load");
         
         popupMenu.add(addItem);
         popupMenu.add(plotItem);
@@ -69,9 +72,17 @@ public class GUI_init {
         popupMenu.add(toggleToolTips);
         popupMenu.add(setResolution);
         popupMenu.add(interSectionSolver);
+        popupMenu.add(saveItem);
+        popupMenu.add(loadItem);
 
         actionMenuButton.addActionListener(e -> popupMenu.show(actionMenuButton, 0, actionMenuButton.getHeight()));
+        saveItem.addActionListener(e -> {
+             FileHandler.saveProjectState();
+        });
 
+        loadItem.addActionListener(e -> {
+             FileHandler.loadProjectState();
+        });
         addItem.addActionListener(e->{
             ControlPanel.addFunctionRow();
         });

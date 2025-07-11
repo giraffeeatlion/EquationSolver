@@ -12,7 +12,7 @@ import Control.Plotter;
 //I mean this object contains that Panel but making it an object was better to understand what has to be plotted.
 public class FunctionRow {
     private JTextField functionField;
-    private JTextField derivativeField;
+    public JTextField derivativeField;
     private JButton addDerivativeButton;
     private JButton deleteFieldButton;
     private JButton addAUCBtn;
@@ -47,6 +47,11 @@ public class FunctionRow {
     {   
         if(this.hasDerivative())
             derivativeField.setText(s);
+    }
+    public String getDerivativeText()
+    {
+        int ind = FunctionRow.functionRows.indexOf(this);
+        return FunctionExpression.derivativeExpressions.get(ind).getExpressionString();
     }
     // this is called by ControlPanel if we have to actually add a row and alladat. The logic also is sorta self explanatory
     public JPanel createFunctionRow()
@@ -83,7 +88,7 @@ public class FunctionRow {
             ControlPanel.AreaCalculator(FunctionExpression.expressions.get(i));
         }
     }
-    private void addDerivativeField()
+    public void addDerivativeField()
     {
         hasDerivative = true;
         derivativeField = new JTextField();

@@ -114,6 +114,10 @@ public static void plotExpressions() {
         for (double x = xMin; x <= xMax; x += resolution) {
             try {
                 double y = function.evaluate(x);
+                if(!(!Double.isNaN(y) && !Double.isInfinite(y)))
+                {
+                    derivativeSeries.add(x,null);
+                }
                 double y_prime = derFunction.evaluate(x);
                 double y_2prime = doubleDerFunction.evaluate(x);
                 boolean largeJump = Math.abs(y - prevY) > LARGE_JUMP_THRESHOLD;
@@ -161,7 +165,7 @@ public static void plotExpressions() {
                 prevY_2prime = y_2prime;
 
             } catch (Exception e) {
-                System.err.println("Evaluation error at x = " + x + ": " + e.getMessage());
+                //System.err.println("Evaluation error at x = " + x + ": " + e.getMessage());
             }
         }
 
